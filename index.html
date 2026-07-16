@@ -93,6 +93,20 @@
   input::placeholder{ color:#5a5142; font-style:italic; }
   input:focus{ border-color:var(--ember); box-shadow:0 0 0 3px rgba(201,106,46,0.15); }
 
+  select{
+    width:100%; background:#0a0808; border:1px solid var(--line);
+    color:var(--bone); font-family:'EB Garamond', serif; font-size:18px;
+    padding:12px 14px; border-radius:2px; outline:none; cursor:pointer;
+    appearance:none; -webkit-appearance:none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--gold) 50%), linear-gradient(135deg, var(--gold) 50%, transparent 50%);
+    background-position: calc(100% - 22px) center, calc(100% - 16px) center;
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+    transition:border-color 0.2s, box-shadow 0.2s;
+  }
+  select:focus{ border-color:var(--ember); box-shadow:0 0 0 3px rgba(201,106,46,0.15); }
+  select option{ background:#0a0808; color:var(--bone); }
+
   .btn{
     margin-top:28px; width:100%; padding:15px 20px;
     background:linear-gradient(180deg, #7a2f14, #5a2010);
@@ -104,6 +118,31 @@
   .btn:hover{ background:linear-gradient(180deg, #8f3818, #6a2812); box-shadow:0 0 22px rgba(201,106,46,0.35); }
   .btn:active{ transform:scale(0.98); }
   .btn:focus-visible{ outline:2px solid var(--ember-bright); outline-offset:3px; }
+
+  .upload-box{
+    position:relative; border:1px dashed var(--line); border-radius:2px;
+    padding:18px; text-align:center; cursor:pointer; overflow:hidden;
+    background:#0a0808; transition:border-color 0.2s;
+  }
+  .upload-box:hover{ border-color:var(--gold); }
+  .upload-box input[type="file"]{
+    position:absolute; inset:0; opacity:0; cursor:pointer; padding:0;
+  }
+  .upload-hint{
+    color:var(--bone-dim); font-style:italic; font-size:15px; pointer-events:none;
+  }
+  #bossPreview{
+    display:none; max-width:100%; max-height:180px; margin:0 auto;
+    border-radius:2px; border:1px solid var(--line); pointer-events:none;
+  }
+  .upload-box.has-photo .upload-hint{ display:none; }
+  .upload-box.has-photo #bossPreview{ display:block; }
+  .remove-photo{
+    display:none; margin-top:10px; background:transparent; border:none;
+    color:var(--bone-dim); font-family:'EB Garamond', serif; font-style:italic;
+    font-size:13px; text-decoration:underline; cursor:pointer; position:relative; z-index:2;
+  }
+  .upload-box.has-photo .remove-photo{ display:inline-block; }
 
   .result{
     margin-top:36px; padding-top:30px; border-top:1px solid var(--line);
@@ -172,6 +211,20 @@
   <p class="subtitle">Confesse suas mortes. Receba seu diagnóstico.<br>Não há cura, apenas aceitação.</p>
 
   <div class="card">
+    <label for="game">Qual jogo você está jogando?</label>
+    <select id="game">
+      <option value="Demon's Souls">Demon's Souls</option>
+      <option value="Dark Souls">Dark Souls</option>
+      <option value="Dark Souls II">Dark Souls II</option>
+      <option value="Dark Souls III" selected>Dark Souls III</option>
+      <option value="Bloodborne">Bloodborne</option>
+      <option value="Sekiro: Shadows Die Twice">Sekiro: Shadows Die Twice</option>
+      <option value="Elden Ring">Elden Ring</option>
+      <option value="Elden Ring: Shadow of the Erdtree">Elden Ring: Shadow of the Erdtree</option>
+      <option value="Elden Ring Nightreign">Elden Ring Nightreign</option>
+      <option value="Outro jogo FromSoftware">Outro jogo FromSoftware</option>
+    </select>
+
     <label for="boss">Contra qual boss você sangrou?</label>
     <input id="boss" type="text" placeholder="ex: Malenia, Lady of Rot">
 
@@ -180,6 +233,14 @@
 
     <label for="hours">Quantas horas você já perdeu na saga? (opcional)</label>
     <input id="hours" type="number" min="0" placeholder="ex: 120">
+
+    <label for="bossPhoto">Print do boss (sua screenshot, opcional)</label>
+    <div class="upload-box" id="uploadBox">
+      <input id="bossPhoto" type="file" accept="image/*" onchange="handlePhoto(event)">
+      <div class="upload-hint" id="uploadHint">Toque pra escolher uma foto</div>
+      <img id="bossPreview" alt="Prévia da screenshot do boss">
+      <button type="button" class="remove-photo" id="removePhoto" onclick="removePhoto(event)">remover</button>
+    </div>
 
     <button class="btn" onclick="gerarDiagnostico()">Revelar meu destino</button>
 
@@ -281,8 +342,53 @@ const tiers = [
 function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
 let current = null;
+let bossImageEl = null;
+
+function handlePhoto(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      bossImageEl = img;
+      const preview = document.getElementById('bossPreview');
+      preview.src = e.target.result;
+      document.getElementById('uploadBox').classList.add('has-photo');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removePhoto(event){
+  event.stopPropagation();
+  bossImageEl = null;
+  document.getElementById('bossPhoto').value = '';
+  document.getElementById('bossPreview').src = '';
+  document.getElementById('uploadBox').classList.remove('has-photo');
+}
+
+function drawImageCover(ctx, img, x, y, w, h){
+  const imgRatio = img.width / img.height;
+  const boxRatio = w / h;
+  let sx, sy, sw, sh;
+  if(imgRatio > boxRatio){
+    sh = img.height;
+    sw = sh * boxRatio;
+    sx = (img.width - sw) / 2;
+    sy = 0;
+  } else {
+    sw = img.width;
+    sh = sw / boxRatio;
+    sx = 0;
+    sy = (img.height - sh) / 2;
+  }
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
 
 function gerarDiagnostico(){
+  const game = document.getElementById('game').value;
   const bossInput = document.getElementById('boss').value.trim();
   const deathsInput = document.getElementById('deaths').value;
   const boss = bossInput || "um boss sem nome que te quebrou por dentro";
@@ -310,7 +416,7 @@ function gerarDiagnostico(){
   document.getElementById('statDeaths').textContent = deaths;
   document.getElementById('statScore').textContent = score;
 
-  current = { boss, deaths, hours, tierTitle: tier.title, diagnosis: plainText, score };
+  current = { game, boss, deaths, hours, tierTitle: tier.title, diagnosis: plainText, score };
 
   const result = document.getElementById('result');
   result.classList.add('show');
@@ -391,33 +497,73 @@ async function generateCard(){
   ctx.font = '500 26px Cinzel';
   ctx.fillText('C A V E R N A   D A R K   S O U L S', W/2, y);
 
-  y += 90;
+  y += 46;
+  ctx.font = 'italic 26px "EB Garamond"';
+  ctx.fillStyle = '#e7ddc7';
+  ctx.fillText(current.game, W/2, y);
+
+  const hasPhoto = !!bossImageEl;
+
+  if(hasPhoto){
+    y += 46;
+    const boxW = 700, boxH = 380;
+    const boxX = (W - boxW) / 2;
+    const boxY = y;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(boxX, boxY, boxW, boxH);
+    ctx.clip();
+    drawImageCover(ctx, bossImageEl, boxX, boxY, boxW, boxH);
+    ctx.restore();
+
+    // vignette over the photo so it blends with the theme
+    const photoGrad = ctx.createLinearGradient(0, boxY, 0, boxY+boxH);
+    photoGrad.addColorStop(0, 'rgba(12,10,8,0.05)');
+    photoGrad.addColorStop(1, 'rgba(12,10,8,0.55)');
+    ctx.fillStyle = photoGrad;
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+
+    ctx.strokeStyle = 'rgba(232,138,63,0.85)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(boxX, boxY, boxW, boxH);
+    ctx.strokeStyle = 'rgba(168,135,63,0.5)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(boxX+8, boxY+8, boxW-16, boxH-16);
+
+    y = boxY + boxH + 66;
+  } else {
+    y += 76;
+  }
+
   // rank label
   ctx.fillStyle = '#a89c82';
   ctx.font = '500 24px Cinzel';
   ctx.fillText('T Í T U L O   C O N C E D I D O', W/2, y);
 
-  y += 78;
+  y += hasPhoto ? 60 : 78;
   // rank title (wrap if long)
   ctx.fillStyle = '#e88a3f';
-  ctx.font = '900 66px Cinzel';
+  ctx.font = hasPhoto ? '900 50px Cinzel' : '900 66px Cinzel';
   ctx.shadowColor = 'rgba(201,106,46,0.5)';
   ctx.shadowBlur = 30;
   const rankLines = wrapLines(ctx, current.tierTitle.toUpperCase(), W-220);
-  rankLines.forEach(line => { ctx.fillText(line, W/2, y); y += 74; });
+  const rankLineHeight = hasPhoto ? 58 : 74;
+  rankLines.forEach(line => { ctx.fillText(line, W/2, y); y += rankLineHeight; });
   ctx.shadowBlur = 0;
 
-  y += 40;
+  y += hasPhoto ? 26 : 40;
   // divider
   ctx.strokeStyle = 'rgba(168,135,63,0.4)';
   ctx.beginPath(); ctx.moveTo(W/2-100, y); ctx.lineTo(W/2+100, y); ctx.stroke();
 
-  y += 80;
+  y += hasPhoto ? 56 : 80;
   // diagnosis text
   ctx.fillStyle = '#e7ddc7';
-  ctx.font = 'italic 40px "EB Garamond"';
+  ctx.font = hasPhoto ? 'italic 32px "EB Garamond"' : 'italic 40px "EB Garamond"';
   const diagLines = wrapLines(ctx, current.diagnosis, W-260);
-  diagLines.forEach(line => { ctx.fillText(line, W/2, y); y += 52; });
+  const diagLineHeight = hasPhoto ? 42 : 52;
+  diagLines.forEach(line => { ctx.fillText(line, W/2, y); y += diagLineHeight; });
 
   // stats block near bottom
   const statsY = H - 430;
@@ -466,6 +612,10 @@ function resetar(){
   document.getElementById('boss').value='';
   document.getElementById('deaths').value='';
   document.getElementById('hours').value='';
+  bossImageEl = null;
+  document.getElementById('bossPhoto').value = '';
+  document.getElementById('bossPreview').src = '';
+  document.getElementById('uploadBox').classList.remove('has-photo');
   document.getElementById('result').classList.remove('show');
   document.getElementById('boss').focus();
 }
