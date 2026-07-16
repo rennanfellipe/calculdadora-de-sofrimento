@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Sofrimento — Caverna Dark Souls</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0c0a08;
+    --bg-2: #171310;
+    --bone: #e7ddc7;
+    --bone-dim: #a89c82;
+    --ember: #c96a2e;
+    --ember-bright: #e88a3f;
+    --blood: #5e1616;
+    --gold: #a8873f;
+    --line: rgba(168,135,63,0.35);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at 50% -10%, rgba(201,106,46,0.10), transparent 55%),
+      radial-gradient(ellipse at 15% 110%, rgba(94,22,22,0.18), transparent 50%),
+      var(--bg);
+    color:var(--bone);
+    font-family:'EB Garamond', serif;
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:48px 20px 80px;
+    position:relative;
+    overflow-x:hidden;
+  }
+  .embers{position:fixed; inset:0; pointer-events:none; z-index:0;}
+  .ember-particle{
+    position:absolute; bottom:-10px; width:3px; height:3px; border-radius:50%;
+    background:var(--ember-bright); box-shadow:0 0 6px 1px var(--ember);
+    opacity:0; animation:rise linear infinite;
+  }
+  @keyframes rise{
+    0%{ transform:translateY(0) translateX(0); opacity:0; }
+    10%{ opacity:0.9; }
+    100%{ transform:translateY(-100vh) translateX(var(--drift,20px)); opacity:0; }
+  }
+  .wrap{ position:relative; z-index:1; width:100%; max-width:620px; }
+
+  .eyebrow{
+    text-align:center; letter-spacing:0.35em; text-transform:uppercase;
+    font-family:'Cinzel', serif; font-size:11px; color:var(--gold);
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Cinzel', serif; font-weight:900; text-align:center;
+    font-size:clamp(28px,5.5vw,44px); margin:0 0 6px; letter-spacing:0.02em;
+    color:var(--bone);
+    text-shadow: 0 0 18px rgba(201,106,46,0.25);
+  }
+  .subtitle{
+    text-align:center; color:var(--bone-dim); font-style:italic; font-size:17px;
+    margin:0 0 40px; line-height:1.5;
+  }
+
+  .card{
+    background: linear-gradient(180deg, var(--bg-2), #0e0b09);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:34px 30px;
+    position:relative;
+  }
+  .card::before, .card::after{
+    content:""; position:absolute; width:14px; height:14px;
+    border:1px solid var(--gold); opacity:0.6;
+  }
+  .card::before{ top:8px; left:8px; border-right:none; border-bottom:none; }
+  .card::after{ bottom:8px; right:8px; border-left:none; border-top:none; }
+
+  label{
+    display:block; font-family:'Cinzel', serif; font-size:12px;
+    letter-spacing:0.12em; text-transform:uppercase; color:var(--gold);
+    margin-bottom:8px; margin-top:20px;
+  }
+  label:first-of-type{ margin-top:0; }
+  input{
+    width:100%; background:#0a0808; border:1px solid var(--line);
+    color:var(--bone); font-family:'EB Garamond', serif; font-size:18px;
+    padding:12px 14px; border-radius:2px; outline:none;
+    transition:border-color 0.2s, box-shadow 0.2s;
+  }
+  input::placeholder{ color:#5a5142; font-style:italic; }
+  input:focus{ border-color:var(--ember); box-shadow:0 0 0 3px rgba(201,106,46,0.15); }
+
+  .btn{
+    margin-top:28px; width:100%; padding:15px 20px;
+    background:linear-gradient(180deg, #7a2f14, #5a2010);
+    border:1px solid var(--ember); color:var(--bone);
+    font-family:'Cinzel', serif; font-size:14px; letter-spacing:0.14em;
+    text-transform:uppercase; cursor:pointer; border-radius:2px;
+    transition:transform 0.15s, box-shadow 0.15s, background 0.15s;
+  }
+  .btn:hover{ background:linear-gradient(180deg, #8f3818, #6a2812); box-shadow:0 0 22px rgba(201,106,46,0.35); }
+  .btn:active{ transform:scale(0.98); }
+  .btn:focus-visible{ outline:2px solid var(--ember-bright); outline-offset:3px; }
+
+  .result{
+    margin-top:36px; padding-top:30px; border-top:1px solid var(--line);
+    display:none;
+  }
+  .result.show{ display:block; animation:fadein 0.5s ease; }
+  @keyframes fadein{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  .rank-label{
+    text-align:center; font-family:'Cinzel', serif; font-size:11px;
+    letter-spacing:0.3em; text-transform:uppercase; color:var(--bone-dim);
+  }
+  .rank-title{
+    text-align:center; font-family:'Cinzel', serif; font-weight:700;
+    font-size:clamp(22px,4.5vw,30px); color:var(--ember-bright);
+    margin:8px 0 20px; text-shadow:0 0 20px rgba(201,106,46,0.3);
+  }
+  .diagnosis{
+    font-size:19px; line-height:1.65; color:var(--bone); text-align:center;
+    font-style:italic; padding:0 6px;
+  }
+  .diagnosis b{ font-style:normal; color:var(--gold); }
+
+  .stats{
+    display:flex; justify-content:center; gap:36px; margin-top:26px;
+    padding-top:22px; border-top:1px dashed var(--line);
+  }
+  .stat{ text-align:center; }
+  .stat .num{ font-family:'Cinzel', serif; font-size:24px; color:var(--ember-bright); }
+  .stat .lbl{ font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--bone-dim); margin-top:4px; }
+
+  .share-row{ display:flex; gap:10px; margin-top:26px; }
+  .btn-ghost{
+    flex:1; background:transparent; border:1px solid var(--line); color:var(--bone-dim);
+    font-family:'Cinzel', serif; font-size:12px; letter-spacing:0.1em; text-transform:uppercase;
+    padding:12px; border-radius:2px; cursor:pointer; transition:border-color 0.2s, color 0.2s;
+  }
+  .btn-ghost:hover{ border-color:var(--gold); color:var(--gold); }
+
+  .btn-card{
+    margin-top:26px;
+    background:linear-gradient(180deg, #8a6a2a, #6b4f1c);
+    border:1px solid var(--gold);
+  }
+  .btn-card:hover{ background:linear-gradient(180deg, #a07f34, #7d5c22); box-shadow:0 0 22px rgba(168,135,63,0.35); }
+  .btn-card:disabled{ opacity:0.6; cursor:wait; }
+
+  footer{
+    text-align:center; margin-top:34px; color:var(--bone-dim);
+    font-size:13px; font-style:italic; letter-spacing:0.02em;
+  }
+  footer span{ color:var(--gold); font-style:normal; }
+
+  @media (prefers-reduced-motion: reduce){
+    .ember-particle{ animation:none; display:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="embers" id="embers"></div>
+
+<div class="wrap">
+  <div class="eyebrow">Caverna Dark Souls apresenta</div>
+  <h1>Calculadora de Sofrimento</h1>
+  <p class="subtitle">Confesse suas mortes. Receba seu diagnóstico.<br>Não há cura, apenas aceitação.</p>
+
+  <div class="card">
+    <label for="boss">Contra qual boss você sangrou?</label>
+    <input id="boss" type="text" placeholder="ex: Malenia, Lady of Rot">
+
+    <label for="deaths">Quantas vezes você morreu pra ele?</label>
+    <input id="deaths" type="number" min="0" placeholder="ex: 47">
+
+    <label for="hours">Quantas horas você já perdeu na saga? (opcional)</label>
+    <input id="hours" type="number" min="0" placeholder="ex: 120">
+
+    <button class="btn" onclick="gerarDiagnostico()">Revelar meu destino</button>
+
+    <div class="result" id="result">
+      <div class="rank-label">Título concedido</div>
+      <div class="rank-title" id="rankTitle"></div>
+      <div class="diagnosis" id="diagnosisText"></div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="num" id="statDeaths">0</div>
+          <div class="lbl">Mortes</div>
+        </div>
+        <div class="stat">
+          <div class="num" id="statScore">0</div>
+          <div class="lbl">Índice de Sofrimento</div>
+        </div>
+      </div>
+
+      <button class="btn btn-card" id="cardBtn" onclick="generateCard()">Compartilhar nos stories</button>
+
+      <div class="share-row">
+        <button class="btn-ghost" onclick="resetar()">Sofrer de novo</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>Nenhuma fogueira foi acesa na produção deste site. <span>Praise the Sun 🔥</span></footer>
+</div>
+
+<canvas id="cardCanvas" width="1080" height="1920" style="display:none;"></canvas>
+
+<script>
+// ember particles
+const emberContainer = document.getElementById('embers');
+const N = 22;
+for(let i=0;i<N;i++){
+  const e = document.createElement('div');
+  e.className = 'ember-particle';
+  const left = Math.random()*100;
+  const dur = 6 + Math.random()*8;
+  const delay = Math.random()*10;
+  const drift = (Math.random()*60 - 30) + 'px';
+  e.style.left = left+'vw';
+  e.style.animationDuration = dur+'s';
+  e.style.animationDelay = delay+'s';
+  e.style.setProperty('--drift', drift);
+  emberContainer.appendChild(e);
+}
+
+const tiers = [
+  {
+    max: 3,
+    title: "Sopro dos Deuses",
+    lines: [
+      "Você derrotou {boss} com {deaths} mortes. Ou você é um prodígio, ou está mentindo com a cara mais tranquila de Lordran.",
+      "{deaths} mortes contra {boss}? Isso não é sofrimento, isso é currículo de speedrunner.",
+      "Com {deaths} mortes, {boss} provavelmente nem te viu como ameaça. Foi um passeio no parque das Terras Intermédias."
+    ]
+  },
+  {
+    max: 10,
+    title: "Não-Morto Competente",
+    lines: [
+      "{deaths} mortes pra {boss}. Doloroso, mas digno. Você tem o que se chama de 'trauma administrável'.",
+      "Você apanhou de {boss} {deaths} vezes e ainda assim voltou. Isso é resiliência, ou teimosia patológica — a linha é fina.",
+      "{deaths} tentativas até vencer {boss}. Nada mal. Suas mãos ainda tremem um pouco, mas sua alma está intacta."
+    ]
+  },
+  {
+    max: 25,
+    title: "Fedido de Combate",
+    lines: [
+      "{deaths} mortes pra {boss}. Você já decorou cada animação, cada padrão de ataque, e provavelmente já xingou em três idiomas.",
+      "{boss} já te viu morrer {deaths} vezes. Nesse ponto, é praticamente uma relação. Vocês têm história.",
+      "Com {deaths} mortes, você atingiu o estágio em que raiva vira meditação. É o zen do Not-Morto."
+    ]
+  },
+  {
+    max: 50,
+    title: "Escravo da Fogueira",
+    lines: [
+      "{deaths} mortes contra {boss}. Você não está mais jogando o jogo, o jogo está te processando psicologicamente.",
+      "{boss} já apareceu nos seus sonhos {deaths} vezes provavelmente. O controle já tem marcas dos seus dedos.",
+      "{deaths} tentativas. Sua família já pergunta se você está bem. Você não sabe mais responder."
+    ]
+  },
+  {
+    max: 999999,
+    title: "Lorde das Cinzas do Sofrimento",
+    lines: [
+      "{deaths} mortes pra {boss}. Isso já não é dificuldade, é um relacionamento abusivo que você escolheu manter.",
+      "Com {deaths} mortes, você transcendeu o jogo. {boss} deveria te pagar aluguel por tanto tempo que passa na sua tela.",
+      "{deaths} tentativas contra {boss}. FromSoftware deveria te mandar uma carta de agradecimento. Você é a razão pela qual eles ainda fazem jogos difíceis."
+    ]
+  }
+];
+
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+let current = null;
+
+function gerarDiagnostico(){
+  const bossInput = document.getElementById('boss').value.trim();
+  const deathsInput = document.getElementById('deaths').value;
+  const boss = bossInput || "um boss sem nome que te quebrou por dentro";
+  const deaths = deathsInput === '' ? 0 : Math.max(0, parseInt(deathsInput, 10) || 0);
+  const hoursInput = document.getElementById('hours').value;
+  const hours = hoursInput === '' ? null : Math.max(0, parseInt(hoursInput, 10) || 0);
+
+  const tier = tiers.find(t => deaths <= t.max);
+  const template = pick(tier.lines);
+  let text = template.replaceAll('{boss}', '<b>' + boss + '</b>').replaceAll('{deaths}', deaths);
+  let plainText = template.replaceAll('{boss}', boss).replaceAll('{deaths}', deaths);
+
+  if(hours !== null && hours > 0){
+    const extra = hours >= 100
+      ? " E olha, " + hours + " horas de jogo já dizem tudo: isso deixou de ser hobby e virou estilo de vida."
+      : " Com " + hours + " horas na saga, ainda dá tempo de fingir que isso é só uma fase.";
+    text += extra;
+    plainText += extra;
+  }
+
+  const score = deaths * 3 + (hours || 0);
+
+  document.getElementById('rankTitle').textContent = tier.title;
+  document.getElementById('diagnosisText').innerHTML = text;
+  document.getElementById('statDeaths').textContent = deaths;
+  document.getElementById('statScore').textContent = score;
+
+  current = { boss, deaths, hours, tierTitle: tier.title, diagnosis: plainText, score };
+
+  const result = document.getElementById('result');
+  result.classList.add('show');
+  result.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function wrapLines(ctx, text, maxWidth){
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  for(const word of words){
+    const test = line ? line + ' ' + word : word;
+    if(ctx.measureText(test).width > maxWidth && line){
+      lines.push(line);
+      line = word;
+    } else {
+      line = test;
+    }
+  }
+  if(line) lines.push(line);
+  return lines;
+}
+
+async function generateCard(){
+  if(!current) return;
+  const btn = document.getElementById('cardBtn');
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Gerando...';
+
+  await document.fonts.load('900 64px Cinzel');
+  await document.fonts.load('700 48px Cinzel');
+  await document.fonts.load('500 32px Cinzel');
+  await document.fonts.load('italic 40px "EB Garamond"');
+  await document.fonts.ready;
+
+  const canvas = document.getElementById('cardCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  // background
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#171310');
+  bg.addColorStop(1, '#0a0807');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  const glow = ctx.createRadialGradient(W/2, H*0.28, 40, W/2, H*0.28, W*0.75);
+  glow.addColorStop(0, 'rgba(201,106,46,0.22)');
+  glow.addColorStop(1, 'rgba(201,106,46,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+
+  const glowBottom = ctx.createRadialGradient(W*0.2, H*0.92, 20, W*0.2, H*0.92, W*0.7);
+  glowBottom.addColorStop(0, 'rgba(94,22,22,0.28)');
+  glowBottom.addColorStop(1, 'rgba(94,22,22,0)');
+  ctx.fillStyle = glowBottom;
+  ctx.fillRect(0, 0, W, H);
+
+  // outer frame
+  ctx.strokeStyle = 'rgba(168,135,63,0.5)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(48, 48, W-96, H-96);
+  ctx.strokeStyle = 'rgba(168,135,63,0.85)';
+  const cs = 46; // corner size
+  ctx.beginPath();
+  ctx.moveTo(30, 30+cs); ctx.lineTo(30,30); ctx.lineTo(30+cs,30);
+  ctx.moveTo(W-30-cs, 30); ctx.lineTo(W-30,30); ctx.lineTo(W-30, 30+cs);
+  ctx.moveTo(30, H-30-cs); ctx.lineTo(30,H-30); ctx.lineTo(30+cs, H-30);
+  ctx.moveTo(W-30-cs, H-30); ctx.lineTo(W-30, H-30); ctx.lineTo(W-30, H-30-cs);
+  ctx.stroke();
+
+  let y = 190;
+
+  // eyebrow
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#a8873f';
+  ctx.font = '500 26px Cinzel';
+  ctx.fillText('C A V E R N A   D A R K   S O U L S', W/2, y);
+
+  y += 90;
+  // rank label
+  ctx.fillStyle = '#a89c82';
+  ctx.font = '500 24px Cinzel';
+  ctx.fillText('T Í T U L O   C O N C E D I D O', W/2, y);
+
+  y += 78;
+  // rank title (wrap if long)
+  ctx.fillStyle = '#e88a3f';
+  ctx.font = '900 66px Cinzel';
+  ctx.shadowColor = 'rgba(201,106,46,0.5)';
+  ctx.shadowBlur = 30;
+  const rankLines = wrapLines(ctx, current.tierTitle.toUpperCase(), W-220);
+  rankLines.forEach(line => { ctx.fillText(line, W/2, y); y += 74; });
+  ctx.shadowBlur = 0;
+
+  y += 40;
+  // divider
+  ctx.strokeStyle = 'rgba(168,135,63,0.4)';
+  ctx.beginPath(); ctx.moveTo(W/2-100, y); ctx.lineTo(W/2+100, y); ctx.stroke();
+
+  y += 80;
+  // diagnosis text
+  ctx.fillStyle = '#e7ddc7';
+  ctx.font = 'italic 40px "EB Garamond"';
+  const diagLines = wrapLines(ctx, current.diagnosis, W-260);
+  diagLines.forEach(line => { ctx.fillText(line, W/2, y); y += 52; });
+
+  // stats block near bottom
+  const statsY = H - 430;
+  ctx.strokeStyle = 'rgba(168,135,63,0.3)';
+  ctx.setLineDash([6,10]);
+  ctx.beginPath(); ctx.moveTo(140, statsY-60); ctx.lineTo(W-140, statsY-60); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.font = '700 58px Cinzel';
+  ctx.fillStyle = '#e88a3f';
+  ctx.fillText(String(current.deaths), W/2-160, statsY+20);
+  ctx.fillText(String(current.score), W/2+160, statsY+20);
+
+  ctx.font = '500 20px Cinzel';
+  ctx.fillStyle = '#a89c82';
+  ctx.fillText('M O R T E S', W/2-160, statsY+64);
+  ctx.fillText('S O F R I M E N T O', W/2+160, statsY+64);
+
+  // handle badge at bottom, the link to the page
+  const badgeY = H - 220;
+  ctx.strokeStyle = 'rgba(232,138,63,0.8)';
+  ctx.lineWidth = 2;
+  const badgeW = 620, badgeH = 96;
+  ctx.strokeRect(W/2-badgeW/2, badgeY-badgeH/2, badgeW, badgeH);
+
+  ctx.font = '700 46px Cinzel';
+  ctx.fillStyle = '#e7ddc7';
+  ctx.fillText('@cavernadarksouls', W/2, badgeY+16);
+
+  ctx.font = '400 26px "EB Garamond"';
+  ctx.fillStyle = '#a89c82';
+  ctx.fillText('teste o seu sofrimento — link na bio', W/2, H-110);
+
+  // download
+  const link = document.createElement('a');
+  const bossSlug = (current.boss || 'boss').toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,30);
+  link.download = 'sofrimento-' + bossSlug + '.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+
+  btn.disabled = false;
+  btn.textContent = originalLabel;
+}
+
+function resetar(){
+  document.getElementById('boss').value='';
+  document.getElementById('deaths').value='';
+  document.getElementById('hours').value='';
+  document.getElementById('result').classList.remove('show');
+  document.getElementById('boss').focus();
+}
+</script>
+
+</body>
+</html>
