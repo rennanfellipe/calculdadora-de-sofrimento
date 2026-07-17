@@ -212,7 +212,7 @@
 
   <div class="card">
     <label for="game">Qual jogo você está jogando?</label>
-    <select id="game">
+    <select id="game" onchange="atualizarSugestoesBoss()">
       <option value="Demon's Souls">Demon's Souls</option>
       <option value="Dark Souls">Dark Souls</option>
       <option value="Dark Souls II">Dark Souls II</option>
@@ -226,7 +226,8 @@
     </select>
 
     <label for="boss">Contra qual boss você sangrou?</label>
-    <input id="boss" type="text" placeholder="ex: Malenia, Lady of Rot">
+    <input id="boss" type="text" list="bossList" placeholder="ex: Malenia, Lady of Rot" autocomplete="off">
+    <datalist id="bossList"></datalist>
 
     <label for="deaths">Quantas vezes você morreu pra ele?</label>
     <input id="deaths" type="number" min="0" placeholder="ex: 47">
@@ -343,6 +344,32 @@ function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
 let current = null;
 let bossImageEl = null;
+
+const bossesByGame = {
+  "Demon's Souls": ["Phalanx","Tower Knight","Penetrator","Flamelurker","Dragon God","Fool's Idol","Maneater","Old Monk","Adjudicator","Old Hero","Storm King","Armor Spider","False King Allant","Old King Allant","Astraea and Garl Vinland","Vanguard"],
+  "Dark Souls": ["Asylum Demon","Taurus Demon","Bell Gargoyles","Capra Demon","Gaping Dragon","Moonlight Butterfly","Pinwheel","Quelaag","Iron Golem","Ornstein and Smough","Seath the Scaleless","Four Kings","Bed of Chaos","Sanctuary Guardian","Gwyn, Lord of Cinder","Ceaseless Discharge","Centipede Demon","Nito","Great Grey Wolf Sif","Crossbreed Priscilla"],
+  "Dark Souls II": ["Last Giant","Dragonrider","Old Dragonslayer","Flexile Sentry","Ruin Sentinels","Skeleton Lords","Belfry Gargoyles","Executioner's Chariot","Lost Sinner","Old Iron King","The Rotten","Royal Rat Authority","Royal Rat Vanguard","Looking Glass Knight","Mytha, the Baneful Queen","Smelter Demon","Duke's Dear Freja","Sinh, the Slumbering Dragon","Throne Watcher and Defender","Vendrick","Nashandra","Fume Knight","Sir Alonne","Ivory King"],
+  "Dark Souls III": ["Iudex Gundyr","Vordt of the Boreal Valley","Curse-Rotted Greatwood","Crystal Sage","Deacons of the Deep","Abyss Watchers","High Lord Wolnir","Old Demon King","Pontiff Sulyvahn","Yhorm the Giant","Aldrich, Devourer of Gods","Dancer of the Boreal Valley","Dragonslayer Armour","Oceiros, the Consumed King","Champion Gundyr","Lorian and Lothric","Ancient Wyvern","Nameless King","Sister Friede","Slave Knight Gael","Darkeater Midir"],
+  "Bloodborne": ["Cleric Beast","Father Gascoigne","Blood-starved Beast","Vicar Amelia","Shadow of Yharnam","Rom, the Vacuous Spider","Ludwig, the Holy Blade","Living Failures","Micolash, Host of the Nightmare","Mergo's Wet Nurse","Ebrietas, Daughter of the Cosmos","One Reborn","Darkbeast Paarl","Witch of Hemwick","Amygdala","Gehrman, the First Hunter","Moon Presence","Orphan of Kos","Laurence, the First Vicar"],
+  "Sekiro: Shadows Die Twice": ["Gyoubu Oniwa","Lady Butterfly","Genichiro Ashina","Guardian Ape","Folding Screen Monkeys","Corrupted Monk","Blazing Bull","Snake Eyes Shirafuji","Seven Ashina Spears","Great Shinobi Owl","True Monk","Great Serpent","Divine Dragon","Demon of Hatred","Emma, the Gentle Blade","Isshin Ashina","Isshin, the Sword Saint"],
+  "Elden Ring": ["Margit, the Fell Omen","Godrick the Grafted","Rennala, Queen of the Full Moon","Radahn, Starscourge","Rykard, Lord of Blasphemy","Mohg, Lord of Blood","Malenia, Blade of Miquella","Morgott, the Omen King","Fire Giant","Godfrey, First Elden Lord","Radagon of the Golden Order","Elden Beast","Maliketh, the Black Blade","Godskin Duo","Astel, Naturalborn of the Void","Dragonlord Placidusax","Draconic Tree Sentinel","Loretta, Knight of the Haligtree","Commander Niall"],
+  "Elden Ring: Shadow of the Erdtree": ["Messmer the Impaler","Rellana, Twin Moon Knight","Romina, Saint of the Bud","Bayle the Dread","Metyr, Mother of Fingers","Divine Beast Dancing Lion","Scadutree Avatar","Putrescent Knight","Midra, Lord of Frenzied Flame","Radahn, Consort of Miquella"],
+  "Elden Ring Nightreign": ["Tricephalos","Gaping Jaw","Sentient Pest","Augur","Equilibrious Beast","Darkdrift Knight","Fissure in the Fog","Night Aspect"],
+  "Outro jogo FromSoftware": []
+};
+
+function atualizarSugestoesBoss(){
+  const game = document.getElementById('game').value;
+  const lista = bossesByGame[game] || [];
+  const datalist = document.getElementById('bossList');
+  datalist.innerHTML = '';
+  lista.forEach(nome => {
+    const opt = document.createElement('option');
+    opt.value = nome;
+    datalist.appendChild(opt);
+  });
+}
+document.addEventListener('DOMContentLoaded', atualizarSugestoesBoss);
 
 function handlePhoto(event){
   const file = event.target.files[0];
